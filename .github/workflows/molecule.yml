@@ -1,0 +1,30 @@
+name: Molecule Test
+on: [push, pull_request]
+
+defaults:
+  run:
+    working-directory: 'awscliv2'
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout codebase
+        uses: actions/checkout@v2
+        with:
+          path: 'awscliv2'
+
+      - name: Set up Python 3
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip3 install molecule[docker] molecule-inspec ansible-lint yamllint
+
+      - name: Test with molecule
+        run:  molecule test
+        env:
+          PY_COLORS: '1'
+          ANSIBLE_FORCE_COLOR: '1'
