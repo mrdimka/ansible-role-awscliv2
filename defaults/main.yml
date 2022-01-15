@@ -1,0 +1,6 @@
+---
+# Optional method of installing a specific version of awscli v2
+# awscli_version: '2.3.4'
+
+executable_temp_dir: /tmp
+awscli_install_dir: /opt/aws-cli/

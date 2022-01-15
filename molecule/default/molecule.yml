@@ -1,0 +1,29 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: ubuntu-20
+    hostname: ubuntu
+    image: mpaivabarbosa/molecule-systemd-ubuntu:20.04
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    privileged: false
+    pre_build_image: true
+    override_command: false
+  - name: centos-7
+    hostname: centos
+    image: mpaivabarbosa/molecule-systemd-centos:7
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    privileged: false
+    pre_build_image: true
+    override_command: false
+provisioner:
+  name: ansible
+verifier:
+  name: inspec
+lint: |
+  yamllint .
+  ansible-lint .

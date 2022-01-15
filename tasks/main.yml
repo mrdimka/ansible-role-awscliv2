@@ -1,0 +1,48 @@
+---
+- name: Install requirements in debian based for unarchive awscli installer
+  apt:
+    name:
+    - unzip
+    state: present
+    update_cache: yes
+    cache_valid_time: 3600
+  become: yes
+  when: ansible_facts['os_family'] == "Debian"
+  tags: ["awscli", "awscliv2"]
+
+- name: Install requirements in redhat based for unarchive awscli installer
+  yum:
+    name:
+    - unzip
+    state: present
+  become: yes
+  when: ansible_facts['os_family'] == "RedHat"
+  tags: ["awscli", "awscliv2"]
+
+- name: Download awscli v2 installer - latest version
+  unarchive:
+    src: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+    dest: '{{ executable_temp_dir }}'
+    remote_src: true
+    creates: '{{ executable_temp_dir }}/aws'
+    mode: 0755
+  when: awscli_version is not defined
+  tags: ["awscli", "awscliv2"]
+
+- name: Download awscli v2 installer - specific version {{ awscli_version }}
+  unarchive:
+    src: 'https://awscli.amazonaws.com/awscli-exe-linux-x86_64-{{ awscli_version }}.zip'
+    dest: "{{ executable_temp_dir }}"
+    remote_src: true
+    creates: '{{ executable_temp_dir }}/aws'
+    mode: 0755
+  when: awscli_version is defined
+  tags: ["awscli", "awscliv2"]
+
+- name: Run the installer for awscli v2
+  command:
+  args:
+    cmd: '{{ executable_temp_dir }}/aws/install -i {{ awscli_install_dir }} -b /usr/local/bin'
+    creates: /usr/local/bin/aws
+  become: yes
+  tags: ["awscli", "awscliv2"]

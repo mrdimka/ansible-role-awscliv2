@@ -1,0 +1,10 @@
+---
+- name: Converge
+  hosts: all
+
+  pre_tasks:
+
+  tasks:
+    - name: "Include awscliv2"
+      include_role:
+        name: "awscliv2"

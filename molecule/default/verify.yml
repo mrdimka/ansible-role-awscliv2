@@ -1,0 +1,102 @@
+---
+# This is an example playbook to execute inspec tests.
+# Tests need distributed to the appropriate ansible host/groups
+# prior to execution by `inspec exec`.
+
+- name: Verify
+  hosts: all
+  become: true
+  vars:
+    inspec_bin: /opt/inspec/bin/inspec
+    inspec_download_source_dir: /usr/local/src
+    inspec_test_directory: /tmp/molecule/inspec
+  tasks:
+    - name: Setting variables (CentOS 7 / RHEL 7 / Amazon Linux 2)
+      set_fact:
+        inspec_download_url: "https://packages.chef.io/files/stable/inspec/4.50.3/el/7/inspec-4.50.3-1.el7.x86_64.rpm"
+        inspec_download_sha256sum: 3c682429e2006a7eb931f5ce3fea15e703270e8e5cbd5bc643872913c44405d7
+      when: (ansible_facts['os_family'] == "RedHat" and (ansible_facts['distribution_major_version'] == "7" or ansible_facts['distribution_major_version'] == "2"))
+
+    - name: Setting variables (Debian 9 / Ubuntu 20.04)
+      set_fact:
+        inspec_download_url: "https://packages.chef.io/files/stable/inspec/4.50.3/ubuntu/20.04/inspec_4.50.3-1_amd64.deb"
+        inspec_download_sha256sum: 656d0645d5ff617d862158ab9360a8516e881aebba43a8c33e713b35a010e6f9
+      when: (ansible_facts['os_family'] == "Debian" and (ansible_facts['distribution_major_version'] == "9" or ansible_facts['distribution_major_version'] == "20"))
+
+    - name: Download Inspec
+      get_url:
+        url: "{{ inspec_download_url }}"
+        dest: "{{ inspec_download_source_dir }}"
+        sha256sum: "{{ inspec_download_sha256sum }}"
+        mode: 0755
+        timeout: 60
+
+    - name: Install Inspec (apt)
+      apt:
+        deb: "{{ inspec_download_source_dir }}/{{ inspec_download_url.split('/')[-1] }}"
+        state: present
+      when: ansible_pkg_mgr == "apt"
+
+    - name: Install Inspec (yum)
+      yum:
+        name: "{{ inspec_download_source_dir }}/{{ inspec_download_url.split('/')[-1] }}"
+        state: present
+      when: ansible_pkg_mgr == "yum"
+
+    - name: Create inspec test directory
+      file:
+        path: "{{ inspec_test_directory }}"
+        state: directory
+        mode: 0755
+
+    - name: Copy inspec test directories
+      file:
+        path: "{{ inspec_test_directory }}/{{ item.path }}"
+        state: directory
+        mode: 0755
+      with_filetree: "{{ lookup('env', 'MOLECULE_VERIFIER_TEST_DIRECTORY') }}/"
+      when: item.state == 'directory'
+
+    - name: Copy inspec test files
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ inspec_test_directory }}/{{ item.path }}"
+        mode: 0644
+      with_filetree: "{{ lookup('env', 'MOLECULE_VERIFIER_TEST_DIRECTORY') }}/"
+      when: item.state == 'file'
+
+    - name: Accept Inspec license
+      command: "{{ inspec_bin }} --chef-license=accept-silent"
+
+    - block:
+      - name: Execute Inspec tests for redhat based
+        command: "{{ inspec_bin }} exec {{ inspec_test_directory }}/redhat.rb"
+        environment:
+          PATH: /usr/local/bin:{{ ansible_env.PATH }}
+        register: test_results
+        ignore_errors: true
+
+      - name: Display details about the Inspec results
+        debug:
+          msg: "{{ test_results.stdout_lines }}"
+      - name: Fail when tests fail
+        fail:
+          msg: "Inspec failed to validate"
+        when: test_results.rc != 0
+      when: ansible_os_family == 'RedHat'
+
+    - block:
+      - name: Execute Inspec tests for debian based
+        command: "{{ inspec_bin }} exec {{ inspec_test_directory }}/debian.rb"
+        register: test_results
+        ignore_errors: true
+
+      - name: Display details about the Inspec results
+        debug:
+          msg: "{{ test_results.stdout_lines }}"
+
+      - name: Fail when tests fail
+        fail:
+          msg: "Inspec failed to validate"
+        when: test_results.rc != 0
+      when: ansible_os_family == 'Debian'
