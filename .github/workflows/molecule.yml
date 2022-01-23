@@ -21,7 +21,7 @@ jobs:
           python-version: '3.x'
 
       - name: Install dependencies
-        run: pip3 install molecule[docker] pytest-testinfra ansible-lint yamllint
+        run: pip3 install molecule[docker] pytest-testinfra ansible-lint yamllint ansible-core==2.12.1 ansible==5.2.0
 
       - name: Test with molecule
         run:  molecule test
