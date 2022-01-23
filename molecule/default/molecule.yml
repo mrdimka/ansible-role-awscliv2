@@ -23,7 +23,10 @@ platforms:
 provisioner:
   name: ansible
 verifier:
-  name: inspec
+  name: testinfra
+  options:
+    sudo: true
+    v: 1
 lint: |
   yamllint .
   ansible-lint .
