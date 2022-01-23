@@ -12,5 +12,13 @@ def test_awscliv2_files(host):
     assert host.file("/usr/local/bin/aws_completer").is_symlink
 
 def test_awscliv2_version(host):
-    command = host.run("aws --version")
-    assert command.rc == 0
+    os = host.system_info.distribution  
+    
+    if os == 'debian':
+        command = host.run("aws --version")
+        assert command.rc == 0
+
+    elif os =='redhat':
+        command = host.run("export PATH=/usr/local/bin:$PATH ; aws --version")
+        assert command.rc == 0
+      
