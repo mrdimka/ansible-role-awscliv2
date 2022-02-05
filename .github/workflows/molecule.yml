@@ -20,8 +20,11 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Install ansible
+        run: pip3 install -r molecule/requirements.txt
+
       - name: Install dependencies
-        run: pip3 install molecule[docker] pytest-testinfra ansible-lint yamllint ansible-core==2.12.1 ansible==5.2.0
+        run: pip3 install molecule[docker] pytest-testinfra ansible-lint yamllint
 
       - name: Test with molecule
         run:  molecule test
